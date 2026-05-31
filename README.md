@@ -1,145 +1,228 @@
-# Ferdev Message Socket Gateway
+🚀 Ferdev Message Socket Gateway
 
-Realtime WebSocket gateway dibuat khusus untuk FerdevAPI.\
-Project ini berfungsi sebagai layer komunikasi realtime berbasis room,
-tanpa mengganggu arsitektur REST utama.
+Realtime WebSocket Gateway yang dirancang khusus untuk ekosistem FerdevAPI.
 
-Gateway ini menangani: - Room-based messaging - Online user tracking -
-Broadcast event - Integrasi dengan REST API - CORS configuration -
-Health monitoring
+Gateway ini berfungsi sebagai Realtime Transport Layer yang terpisah dari REST API utama, sehingga komunikasi realtime dapat berjalan secara efisien tanpa membebani business logic maupun database layer.
 
-Dirancang modular supaya scalable dan maintainable.
+---
 
-------------------------------------------------------------------------
+📖 Overview
 
-## 📌 Overview
+Architecture Separation
 
-Arsitektur dipisah dengan jelas:
+Layer| Responsibility
+REST API| Business Logic, Authentication, Database Persistence
+Socket Gateway| Realtime Communication & Event Broadcasting
 
-REST API → Business logic & persistence\
-Socket Gateway → Realtime transport layer
+Gateway tidak menyimpan data permanen.
 
-Gateway ini tidak menyimpan state permanen (kecuali tracking online user
-di memory).\
-Semua persistence tetap berada di REST API / database.
+Semua data utama tetap disimpan melalui REST API dan database, sedangkan gateway hanya bertugas mengelola koneksi realtime dan distribusi event.
 
-------------------------------------------------------------------------
+---
 
-## 🚀 Features
+✨ Features
 
--   Room-based chat
--   Emit ke room tertentu
--   Track online users
--   Health check endpoint
--   Modular controller & routes structure
--   Clean separation between socket layer and HTTP layer
+Feature| Description
+Room-Based Messaging| Mengirim event ke room tertentu
+Online User Tracking| Melacak user yang sedang online
+Broadcast Event| Mengirim event ke banyak client sekaligus
+Health Monitoring| Endpoint monitoring service
+Modular Architecture| Struktur project terpisah dan mudah dirawat
+REST API Integration| Mudah diintegrasikan dengan backend utama
 
-------------------------------------------------------------------------
+---
 
-## 🏗 Project Structure
+🏗️ Project Structure
 
-ferdev-message-socket/ │ ├── config/ │ ├── cors.js │ └── db.js │ ├──
-controllers/ │ └── message.controller.js │ ├── middlewares/ │ └──
-notFound.js │ ├── routes/ │ ├── health.routes.js │ └── message.routes.js
-│ ├── socket/ │ ├── chat.socket.js │ └── index.js │ ├── utils/ │ └──
-onlineUsers.js │ ├── .env ├── .env.example ├── .gitignore ├── app.js ├──
-server.js ├── package.json └── package-lock.json
+ferdev-message-socket/
+│
+├── config/
+│   ├── cors.js
+│   └── db.js
+│
+├── controllers/
+│   └── message.controller.js
+│
+├── middlewares/
+│   └── notFound.js
+│
+├── routes/
+│   ├── health.routes.js
+│   └── message.routes.js
+│
+├── socket/
+│   ├── chat.socket.js
+│   └── index.js
+│
+├── utils/
+│   └── onlineUsers.js
+│
+├── .env.example
+├── .gitignore
+├── app.js
+├── server.js
+├── package.json
+└── package-lock.json
 
-------------------------------------------------------------------------
+---
 
-## 🧠 Architecture Flow
+🧠 Architecture Flow
 
-1.  Client connect ke WebSocket\
-2.  Client join room\
-3.  REST API trigger emit (atau socket event langsung)\
-4.  Gateway broadcast ke room target\
-5.  Online user registry update otomatis
+Client
+   │
+   ▼
+WebSocket Connection
+   │
+   ▼
+Join Room
+   │
+   ▼
+REST API Trigger Event
+   │
+   ▼
+Socket Gateway
+   │
+   ▼
+Broadcast To Target Room
+   │
+   ▼
+Connected Clients
 
-Online users disimpan di memory (Map/Object) untuk lookup cepat.
+Realtime Lifecycle
 
-------------------------------------------------------------------------
+1. Client melakukan koneksi ke WebSocket.
+2. Client bergabung ke room tertentu.
+3. REST API atau socket event memicu broadcast.
+4. Gateway mengirim event ke room tujuan.
+5. Registry online user diperbarui secara otomatis.
 
-## 🔧 Environment Variables
+---
 
-Contoh `.env`:
+⚙️ Environment Variables
 
-PORT=3001\
+".env"
+
+PORT=3001
 CLIENT_ORIGIN=http://localhost:3000
 
-Gunakan `.env.example` sebagai template.
+Gunakan file ".env.example" sebagai referensi konfigurasi.
 
-------------------------------------------------------------------------
+---
 
-## ▶️ Installation
+📦 Installation
 
-Install dependencies:
+Install Dependencies
 
 npm install
 
-Run development mode:
+Development Mode
 
 npm run dev
 
-Run production mode:
+Production Mode
 
 npm start
 
-Jika menggunakan PM2:
+PM2 Deployment
 
-pm2 start server.js --name message-gateway
+pm2 start server.js --name ferdev-message-gateway
 
-------------------------------------------------------------------------
+---
 
-## 📡 Health Check
+📡 Health Check
 
-Endpoint untuk monitoring service:
+Endpoint monitoring untuk memastikan service berjalan dengan normal.
+
+Request
 
 GET /health
 
-Digunakan untuk uptime monitoring atau reverse proxy validation.
+Response
 
-------------------------------------------------------------------------
+{
+  "status": "ok"
+}
 
-## 🔌 Integration With REST API
+---
 
-Gateway dapat diintegrasikan dengan:
+🔌 REST API Integration
 
--   Internal HTTP request dari REST API\
--   Shared Redis pub/sub (untuk scaling horizontal)
+Gateway dapat menerima trigger event dari backend utama melalui:
 
-Untuk deployment multi-instance disarankan menggunakan Redis adapter
-untuk Socket.IO.
+Internal HTTP Request
 
-------------------------------------------------------------------------
+REST API
+    │
+    ▼
+Gateway Endpoint
+    │
+    ▼
+Socket Broadcast
 
-## 🛡 Error Handling
+Redis Pub/Sub (Recommended)
 
--   Global not found middleware\
--   Structured controller pattern\
--   Graceful server bootstrap
+Untuk deployment multi-instance:
 
-------------------------------------------------------------------------
+REST API
+    │
+    ▼
+Redis Pub/Sub
+    │
+    ▼
+Multiple Gateway Instances
 
-## 📈 Future Improvements
+Penggunaan Redis Adapter sangat disarankan untuk kebutuhan horizontal scaling.
 
--   Redis adapter untuk horizontal scaling\
--   Rate limiting per socket\
--   Message acknowledgment system\
--   Persistent online state via Redis
+---
 
-------------------------------------------------------------------------
+🛡 Error Handling
 
-## 📜 Notes
+Gateway menerapkan beberapa lapisan penanganan error:
 
--   Gateway ini bukan message broker.\
--   Tidak menyimpan history chat.\
--   Fokus hanya pada realtime transport layer.
+- Global Not Found Middleware
+- Structured Controller Pattern
+- Graceful Server Bootstrap
+- Centralized Error Response
 
-Loose coupling by design.\
-REST API dan Gateway dapat berjalan independen.
+---
 
-------------------------------------------------------------------------
+📈 Roadmap
 
-## 🧑‍💻 Creator
+Planned Features
 
-dibuat khusus untuk FerdevAPi oleh FeriPratama
+- Redis Adapter Support
+- Socket Rate Limiting
+- Message Acknowledgement System
+- Distributed Online State via Redis
+- Metrics & Monitoring Dashboard
+- Cluster Mode Deployment
+
+---
+
+📌 Notes
+
+«Ferdev Message Socket Gateway bukan message broker.»
+
+Scope
+
+✅ Realtime Event Delivery
+
+✅ Room Management
+
+✅ Online User Tracking
+
+❌ Message Persistence
+
+❌ Chat History Storage
+
+❌ Business Logic Processing
+
+Prinsip utama project ini adalah Loose Coupling Architecture, sehingga REST API dan Gateway dapat berjalan secara independen.
+
+---
+
+👨‍💻 Creator
+
+Feri Pratama
+
+Built with ❤️ for the FerdevAPI ecosystem.
